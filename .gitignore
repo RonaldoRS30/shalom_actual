@@ -1,0 +1,7 @@
+# Archivos de configuración
+/system/application/config/database.php
+/system/application/config/config.php
+/system/logs
+
+# Archivos de tokens de sunat
+/system/application/libraries/Tokens.php
