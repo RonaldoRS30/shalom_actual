@@ -299,21 +299,66 @@ class pdfComprobante extends TCPDF {
         //SE IMPRIME EL LOGO DE LA EMPRESA RAZON ANCHO/ALTO=4.7
 
         $logo_empresa = base_url() . 'images/cabeceras/logo'.$this->empresa.'.png';
-        $this->Image($logo_empresa, 10, 12, 123, 20, '', '', '', false,300);
+        $this->Image($logo_empresa, 10, 8, 80, 25, '', '', '', false, 300);
 
         $this->SetY(34);
 
-        $comprobanteHTML = '<table style="width:12cm; font-size:8pt;" border="0">
+        if ($this->empresa!="1041") {
+            $datos_contacto = $this->direccion . '<br>' . $this->ubigeo. '<br>Teléfono: 4931507 Cel.: 947134734  /  954170999   E-mail: rcardozo@solucioneseinversionesmontoya.com  administracion@solucioneseinversionesmontoya.com';
+        }else{
+            $datos_contacto = $this->direccion . '<br>' . $this->ubigeo. '<br>Teléfono Cel.: 954170999  /  992785827 <br>E-mail: distribucion@montoyacf.com.pe  rcardozo@montoyacf.com.pe';
+        }
+
+        $comprobanteHTML = '<table style="width:13cm; font-size:8pt;" border="0">
         <tr>
         <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
         </tr>
         <tr>
-        <td>' . $this->direccion . '<br>
+        
+        <td>' . $datos_contacto . '
         </td>
+        
         </tr>
         </table>';
 
         $this->writeHTML($comprobanteHTML,true,false,true,'');
+        $this->SetY(55);
+    }
+
+    public function Footer( $personal = NULL ){
+                $this->SetFont('freesans', '', 7);
+        $this->SetY(-9);
+        $pieHTML = '
+            <table border="0" cellpadding="0.1cm">
+                <tr>
+                    <td style="text-align:center;">Página '.$this->getAliasNumPage().' de '.$this->getAliasNbPages().'</td>
+                </tr>
+            </table>';
+
+        $this->writeHTML($pieHTML,false,'');
+        $this->SetY(55);
+
+        if ($this->empresa!="1041") {
+            
+        }else{
+            $logo_empresa = base_url() . 'images/cabeceras/footer.png';
+            $this->SetFont('freesans', '', 8);
+            $this->SetY(-30);
+            $pieHTML = '
+                <table border="0" cellpadding="0.1cm">
+                    <tr bgcolor="#F6F6F6">
+                        <td style="font-weight:bold; text-align:center;">Distribuidor autorizado</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;"><img src="'.$logo_empresa.'" style="width:15cm; height:1.3cm;" > </td>
+                        
+                    </tr>
+                </table>';
+
+            $this->writeHTML($pieHTML,false,'');
+        }
+        
+        
         $this->SetY(55);
     }
 }

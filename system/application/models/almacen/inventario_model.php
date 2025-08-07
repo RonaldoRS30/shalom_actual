@@ -50,6 +50,15 @@ class Inventario_model extends model
     }
     /** End Luis Valdes **/
 
+    public function getDetallesCargaMasiva($inventario_id)
+{
+    $this->db->select('PROD_Codigo, INVD_Cantidad');
+    $this->db->where('INVE_Codigo', $inventario_id);
+    $this->db->where('INVD_FlagActivacion', 1); // Solo activos, si aplica
+    $query = $this->db->get('cji_inventariodetalle');
+    return $query->result_array();
+}
+
     /** Begin Luis Valdes **/
     public function actualizarInventarioDetalle($id, $filter)
     {
@@ -177,34 +186,36 @@ class Inventario_model extends model
     /** Begin Luis Valdes **/
     public function getInventarioDetalles($ajuste)
     {
-
-        $sql = "SELECT ad.*, ia.ALMAP_Codigo, ia.COMPP_Codigo, p.PROD_Nombre, p.PROD_CodigoUsuario, p.PROD_Modelo, m.MARCC_Descripcion,
-                                (SELECT a.ALMPROD_Codigo
-                                    FROM cji_almacenproducto a
-                                    WHERE a.ALMAC_Codigo = ia.ALMAP_Codigo
-                                    AND a.PROD_Codigo = ad.PROD_Codigo
-                                ) as ALMPROD_Codigo, (SELECT a.ALMPROD_Stock
-                                    FROM cji_almacenproducto a
-                                    WHERE a.ALMAC_Codigo = ia.ALMAP_Codigo
-                                    AND a.PROD_Codigo = ad.PROD_Codigo
-                                ) as ALMPROD_Stock,
-                                pe.PERSC_Nombre, pe.PERSC_ApellidoPaterno, pe.PERSC_ApellidoMaterno
-                            FROM cji_inventariodetalle ad
-                            INNER JOIN cji_inventario ia ON ia.INVE_Codigo = ad.INVE_Codigo
-                            INNER JOIN cji_producto p ON p.PROD_Codigo = ad.PROD_Codigo
-                            LEFT JOIN cji_persona pe ON pe.PERSP_Codigo = ad.PERSP_Codigo
-                            LEFT JOIN cji_marca m ON m.MARCP_Codigo = p.MARCP_Codigo
-                            WHERE ad.INVE_Codigo = '$ajuste' AND ad.INVD_FlagActivacion LIKE '1'
-                        ";
+        $sql = "SELECT ad.*, 
+       ia.ALMAP_Codigo, 
+       ia.COMPP_Codigo, 
+       p.PROD_Nombre, 
+       p.PROD_CodigoUsuario, 
+       p.PROD_Modelo, 
+       m.MARCC_Descripcion, 
+       ap.ALMPROD_Codigo, 
+       ap.ALMPROD_Stock, 
+       pe.PERSC_Nombre, 
+       pe.PERSC_ApellidoPaterno, 
+       pe.PERSC_ApellidoMaterno,
+       ad.INVD_Cantidad
+FROM cji_inventariodetalle ad
+INNER JOIN cji_inventario ia ON ia.INVE_Codigo = ad.INVE_Codigo
+INNER JOIN cji_producto p ON p.PROD_Codigo = ad.PROD_Codigo
+LEFT JOIN cji_persona pe ON pe.PERSP_Codigo = ad.PERSP_Codigo
+LEFT JOIN cji_marca m ON m.MARCP_Codigo = p.MARCP_Codigo
+LEFT JOIN cji_almacenproducto ap ON ap.ALMAC_Codigo = ia.ALMAP_Codigo AND ap.PROD_Codigo = ad.PROD_Codigo
+WHERE ad.INVE_Codigo = '$ajuste' AND ad.INVD_FlagActivacion = '1'";
+    
         $query = $this->db->query($sql);
-
+    
         if ($query->num_rows() > 0) {
             return $query->result();
         } else {
             return NULL;
         }
     }
-
+    
     public function nuevoEnAlmacen($filter)
     {
         $this->db->insert("cji_almacenproducto", (array) $filter);
@@ -406,7 +417,7 @@ class Inventario_model extends model
         $filter->LOTC_Numero = $datos['numero_lote'];
         $filter->LOTC_FechaVencimiento = $datos['vencimiento_lote'];
 
-        $filter->INVD_FechaRegistro = date('Y-m-d');
+        $filter->INVD_FechaRegistro = date('Y-m-d H:i:s');
 
         $result = $this->db->insert("cji_inventariodetalle", (array) $filter);
 
@@ -958,15 +969,11 @@ class Inventario_model extends model
             isset($filter->persona) && !empty($filter->persona)
         ) {
             if (!file_exists($filter->file)) {
-                return array('result' => 'error', 'details' => 'El archivo de importaci¨®n no se encuentra en el directorio especificado.');
+                return array('result' => 'error', 'details' => 'El archivo de importación no se encuentra en el directorio especificado.');
             } else {
-                /** Obtenemos la fecha en PHP porque la fecha en DB 'now()' trae la hora chile **/
                 $date = date("Y-m-d H:i:s");
-
-                #$sql = "TRUNCATE TABLE cji_almacenproducto_carga;";
-                #$query = $this->db->query($sql);
-
-                /** Paso 1: Cargamos la data del excel **/
+    
+                // Paso 1: Cargamos la data del archivo
                 if ($filter->ext == "csv") {
                     $sql = "LOAD DATA LOCAL INFILE '$filter->file' 
                             INTO TABLE cji_almacenproducto_carga
@@ -978,11 +985,11 @@ class Inventario_model extends model
                     $objReader = PHPExcel_IOFactory::createReader('Excel5');
                     $objPHPExcel = $objReader->load($filter->file);
                     $worksheet = $objPHPExcel->getActiveSheet();
-
+    
+                    // Realizamos la consulta de producto
                     $consulta = "SELECT PROD_Codigo, PROD_FlagBienServicio FROM cji_producto WHERE PROD_CodigoInterno in";
                     $data = "";
-                    //$cod = "(".$data.")";
-
+    
                     foreach ($worksheet->getRowIterator() as $row) {
                         if ($row->getRowIndex() > 1) {
                             $cellIterator = $row->getCellIterator();
@@ -990,11 +997,9 @@ class Inventario_model extends model
                             $data .= ($data != "") ? ", " : " ";
                             foreach ($cellIterator as $cell) {
                                 if (!is_null($cell)) {
-                                    if (
-                                        $cell->getCoordinate() == 'A' . $row->getRowIndex()
-                                    ) {
-                                        $data .= '"' . $cell->getValue() . '"';
-
+                                    if ($cell->getCoordinate() == 'A' . $row->getRowIndex()) {
+                                        // Escapamos el valor de la celda para prevenir errores de SQL
+                                        $data .= '"' . $this->db->escape_str($cell->getValue()) . '"';
                                         if ($cell->getCoordinate() != 'E' . $row->getRowIndex()) {
                                             $data .= ' ';
                                         }
@@ -1002,34 +1007,30 @@ class Inventario_model extends model
                                 }
                             }
                             $data .= " ";
-                        }
-                        $cod = "(" . $data . ")";
-                    }
+                        }   $cod = "(" . $data . ")";
+                    }               
                     $result = $consulta . $cod;
-
-
                     $obtener = $this->db->query($result);
-
-                    //var_dump("Obtener data: ",$obtener->PROD_Codigo);
-
+    
                     if ($obtener->row()->PROD_FlagBienServicio == 'S') {
-
-                        //No inserta servicios como stock, validacion aplicada para curar bugs
-
+                        // Si es un servicio, no lo agregamos
                     } elseif ($obtener->row()->PROD_FlagBienServicio == 'B') {
-
                         $this->db->trans_start();
-
                         $insert = "INSERT INTO cji_almacenproducto_carga (PROD_CodigoUsuario, PROD_Nombre, PROD_Marca, PROD_Modelo, ALMPC_Cantidad) VALUES ";
                         $vals = array();
-
+    
                         foreach ($worksheet->getRowIterator() as $row) {
                             if ($row->getRowIndex() > 1) {
                                 $cellIterator = $row->getCellIterator();
                                 $cellIterator->setIterateOnlyExistingCells(false);
-                                $rowValues = array(); // Almacena los valores de la fila
+                                $rowValues = array();
+                                $codigoInterno = null;
+    
                                 foreach ($cellIterator as $cell) {
                                     if (!is_null($cell)) {
+                                        if ($cell->getCoordinate() == 'A' . $row->getRowIndex()) {
+                                            $codigoInterno = trim($cell->getValue());
+                                        }
                                         if (
                                             $cell->getCoordinate() == 'A' . $row->getRowIndex() ||
                                             $cell->getCoordinate() == 'B' . $row->getRowIndex() ||
@@ -1037,84 +1038,121 @@ class Inventario_model extends model
                                             $cell->getCoordinate() == 'D' . $row->getRowIndex() ||
                                             $cell->getCoordinate() == 'E' . $row->getRowIndex()
                                         ) {
-                                            $rowValues[] = $cell->getValue();
+                                            // Escapamos cada valor antes de insertarlo en la consulta SQL
+                                            // Además de escapar los valores, eliminamos comillas innecesarias en el caso de comillas dobles
+                                            $cleanedValue = str_replace(array("'", '"'), '', $cell->getValue());
+    
+                                            // Si el valor es texto, lo rodeamos con comillas simples
+                                            if (is_string($cleanedValue)) {
+                                                $cleanedValue = "'" . $this->db->escape_str($cleanedValue) . "'";
+                                            }
+                                            
+                                            // Si el valor está vacío, lo dejamos como NULL
+                                            if (empty($cleanedValue)) {
+                                                $cleanedValue = 'NULL';
+                                            }
+    
+                                            $rowValues[] = $cleanedValue;
                                         }
                                     }
                                 }
-                        
-                                // Verificar si al menos uno de los valores relevantes no está vacío
-                                if (!empty(array_filter($rowValues))) {
-                                    $vals[] = '("' . implode('", "', $rowValues) . '")'; // Agregamos la fila a $vals como un string
+    
+                                if (!empty($codigoInterno)) {
+                                    $consultaProducto = "SELECT PROD_Codigo, PROD_FlagBienServicio FROM cji_producto WHERE PROD_CodigoInterno = ?";
+                                    $queryProducto = $this->db->query($consultaProducto, array($codigoInterno));
+    
+                                    if ($queryProducto->num_rows() > 0) {
+                                        $producto = $queryProducto->row();
+                                        if ($producto->PROD_FlagBienServicio == 'B') {
+                                            // Solo agregar si es un bien (no un servicio)
+                                            if (!empty(array_filter($rowValues))) {
+                                                $vals[] = '(' . implode(', ', $rowValues) . ')';
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-
-                // Verificar si hay filas válidas antes de realizar la inserción
-
-                //Se modifico el nombre de algunos campos para realizar la carga en ingreso de inventario y tambien se reemplazo la tabla 'ajusteintencario' por 'inventario' en la consultas siguientes.
-                if (!empty($vals)) {
-                    // Construir la consulta SQL
-                    $sql = $insert . implode(', ', $vals);
-                    // Ejecutar la consulta SQL de inserción
-                    if ($this->db->query($sql)) {
-                        /** Paso 2: Completamos los datos faltantes (ajuste, almacen, producto) y cambiamos el estado a pendiente o error **/
-                        $sql = "UPDATE cji_almacenproducto_carga pc SET
-                        pc.INVE_Codigo = $filter->inventario,
-                        pc.ALMAP_Codigo = $filter->almacen,
-                        pc.PROD_Codigo = (SELECT p.PROD_Codigo FROM cji_producto p WHERE p.PROD_CodigoUsuario = TRIM(pc.PROD_CodigoUsuario)),
-                        pc.ALMPC_FlagEstado = CASE (SELECT COUNT(*) FROM cji_producto p WHERE p.PROD_CodigoUsuario = TRIM(pc.PROD_CodigoUsuario)) WHEN 0 THEN '4' ELSE '2' END
-                        WHERE pc.ALMPC_FlagEstado LIKE '3'";
-                        if ($this->db->query($sql)) {
-
-                            /** Paso 3: Inserta en cji_inventariodetalle los items en estado pendiente **/
-                            $sql = "INSERT INTO cji_inventariodetalle
-                            (INVE_Codigo, PROD_Codigo, INVD_Cantidad, INVD_Pcosto, PERSP_Codigo, INVD_FechaRegistro, INVD_FechaModificacion, INVD_FlagActivacion, LOTC_Numero, LOTC_FechaVencimiento)
-                            SELECT ac.INVE_Codigo, ac.PROD_Codigo, ac.ALMPC_Cantidad, NULL, $filter->persona, NOW(), NOW(), 1, NULL, NULL
-                            FROM cji_almacenproducto_carga ac
-                            WHERE ac.ALMPC_FlagEstado LIKE '2'";
-
+    
+                        // Verificamos si hay filas válidas antes de hacer el insert
+                        if (!empty($vals)) {
+                            $sql = $insert . implode(', ', $vals);
                             if ($this->db->query($sql)) {
-                                /** Paso 4: Cambia el estado de pendiente a aprobado para no considerar esos items en una próxima carga **/
-                                $sql = "UPDATE cji_almacenproducto_carga pc SET pc.ALMPC_FlagEstado = '1'
-                                    WHERE pc.ALMPC_FlagEstado LIKE '2'
-                                        AND pc.ALMAP_Codigo = $filter->almacen
-                                        AND EXISTS(SELECT d.PROD_Codigo FROM cji_inventariodetalle d WHERE d.INVE_Codigo = pc.INVE_Codigo AND d.PROD_Codigo = pc.PROD_Codigo) ";
-                                $this->db->query($sql);
-
-                                $sql = "SELECT COUNT(*) as cantidad FROM cji_almacenproducto_carga ac WHERE ac.ALMPC_FlagEstado LIKE '4'";
-                                
-                                if ($this->db->query($sql)->row()->cantidad == 0) {
-                                    $this->db->trans_complete();
-                                    return array('result' => 'success', 'details' => 'Ejecución completa.');
+                                // Paso 2: Completamos los datos faltantes y actualizamos el estado
+                                $sql = "UPDATE cji_almacenproducto_carga pc 
+                                SET
+                                    pc.INVE_Codigo = $filter->inventario,
+                                    pc.ALMAP_Codigo = $filter->almacen,
+                                    pc.PROD_Codigo = (
+                                        SELECT p.PROD_Codigo 
+                                        FROM cji_producto p 
+                                        WHERE p.PROD_CodigoUsuario = TRIM(pc.PROD_CodigoUsuario) 
+                                        LIMIT 1  -- Asegura que solo se devuelve un valor
+                                    ),
+                                    pc.ALMPC_FlagEstado = CASE 
+                                        WHEN (
+                                            SELECT COUNT(*) 
+                                            FROM cji_producto p 
+                                            WHERE p.PROD_CodigoUsuario = TRIM(pc.PROD_CodigoUsuario)
+                                        ) = 0 THEN '4' 
+                                        ELSE '2' 
+                                    END
+                                WHERE 
+                                    pc.ALMPC_FlagEstado LIKE '3'";
+                                if ($this->db->query($sql)) {
+                                    // Paso 3: Insertar en cji_inventariodetalle
+                                    $sql = "INSERT INTO cji_inventariodetalle
+                                            (INVE_Codigo, PROD_Codigo, INVD_Cantidad, INVD_Pcosto, PERSP_Codigo, INVD_FechaRegistro, INVD_FechaModificacion, INVD_FlagActivacion, LOTC_Numero, LOTC_FechaVencimiento)
+                                            SELECT ac.INVE_Codigo, ac.PROD_Codigo, ac.ALMPC_Cantidad, NULL, $filter->persona, NOW(), NOW(), 1, NULL, NULL
+                                            FROM cji_almacenproducto_carga ac
+                                            WHERE ac.ALMPC_FlagEstado LIKE '2'";
+    
+                                    if ($this->db->query($sql)) {
+                                        // Paso 4: Cambiar el estado de pendiente a aprobado
+                                        $sql = "UPDATE cji_almacenproducto_carga pc SET pc.ALMPC_FlagEstado = '1'
+                                            WHERE pc.ALMPC_FlagEstado LIKE '2'
+                                                AND pc.ALMAP_Codigo = $filter->almacen
+                                                AND EXISTS(SELECT d.PROD_Codigo FROM cji_inventariodetalle d WHERE d.INVE_Codigo = pc.INVE_Codigo AND d.PROD_Codigo = pc.PROD_Codigo)";
+                                        $this->db->query($sql);
+    
+                                        // Verificar si hay errores
+                                        $sql = "SELECT COUNT(*) as cantidad FROM cji_almacenproducto_carga ac WHERE ac.ALMPC_FlagEstado LIKE '4'";
+                                        if ($this->db->query($sql)->row()->cantidad == 0) {
+                                            $this->db->trans_complete();
+                                            return array('result' => 'success', 'details' => 'Ejecución completa.');
+                                        } else {
+                                            $this->removeInventory($id);
+                                            $this->removeInventoryDetails($id);
+                                            $this->db->trans_rollback();
+                                            return array('result' => 'warning', 'details' => 'Algunos productos no se cargaron por presentar códigos no registrados. Se eliminó el inventario creado');
+                                        }
+                                    } else {
+                                        $this->removeInventory($id);
+                                        $this->removeInventoryDetails($id);
+                                        $this->db->trans_rollback();
+                                        return array('result' => 'error', 'details' => 'No es posible registrar los items.');
+                                    }
                                 } else {
-                                    $this->removeInventory($id);
-                                    $this->removeInventoryDetails($id);
-                                    $this->db->trans_rollback();
-                                    return array('result' => 'warning', 'details' => 'Algunos productos no se cargaron por presentar códigos no registrados. Se elimino el inventario creado');
+                                    return array('result' => 'error', 'details' => 'Error al ejecutar mantenimiento de productos cargados.');
                                 }
                             } else {
-                                $this->removeInventory($id);
-                                $this->removeInventoryDetails($id);
-                                $this->db->trans_rollback();
-                                return array('result' => 'error', 'details' => 'No es posible registrar los items.');
+                                return array('result' => 'error', 'details' => 'No fue posible cargar los productos del documento.');
                             }
                         } else {
-                            return array('result' => 'error', 'details' => 'Error al ejecutar mantenimiento de productos cargados.');
+                            return array('result' => 'warning', 'details' => 'No se encontraron filas válidas para insertar en cji_almacenproducto_carga.');
                         }
-                    } else {
-                        return array('result' => 'error', 'details' => 'No fue posible cargar los productos del documento.');
                     }
-                } else {
-                    // No había filas válidas para insertar
-                    return array('result' => 'warning', 'details' => 'No se encontraron filas válidas para insertar en cji_almacenproducto_carga.');
                 }
             }
         } else {
-            return array('result' => 'error', 'details' => 'Parametros incompletos. Archivo: (' . ((isset($filter->file)) ? $filter->file : '') . ') Ajuste: (' . ((isset($filter->inventario)) ? $filter->inventario : '') . ') almacen: (' . ((isset($filter->almacen)) ? $filter->almacen : '') . ') persona: (' . ((isset($filter->persona)) ? $filter->persona : '') . ')');
+            return array('result' => 'error', 'details' => 'Parametros incompletos.');
         }
     }
+    
+    
+    
+    
+
     ## Dev: Luis Valdes -> End
 
     ## Dev: Luis Valdes -> Begin

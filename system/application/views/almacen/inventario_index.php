@@ -70,23 +70,9 @@
                 <div class="col-sm-12 col-md-12 col-lg-12 pall-0">
                     <div class="acciones">
                         <div id="botonBusqueda">
-                        <?php 
-                        // #############################  aldo  ###########################
-                            //$rol = $this->session->userdata('rol');/
-                            $this->load->library('session');
-                            $rol = $this->session->userdata('rol');
-                            $rolEntero = intval($rol);
-                            ?>
-                            <!-- <input type="text" id="rol" value="<?php //echo $rol ?>"> -->
-                            <?php                             
-                            if ($rol == 7000 || $rol == 1) {?>
-                                <ul class="lista_botones" onclick="modalCargarInventario('','')">
-								    <li id="excel">Cargar</li>
-							    </ul>
-                                <?php 
-                            }  
-                            // ############################# END  ###########################
-                            ?>  
+                            <ul class="lista_botones" onclick="modalCargarInventario('','')">
+								<li id="excel">Cargar</li>
+							</ul>
                             <ul class="lista_botones">
                                 <li id="nuevo" data-toggle='modal' data-target='#modalAjuste'>Nuevo Inventario</li>
                             </ul>
@@ -1022,78 +1008,101 @@
     }
 
     function cargarInventario(ajuste = '') {
-        Swal.fire({
-            icon: "question",
-            title: "¿Esta seguro de ejecutar la carga?",
-            showConfirmButton: true,
-            showCancelButton: true,
-            confirmButtonText: "Aceptar",
-            cancelButtonText: "Cancelar"
-        }).then(result => {
-            if (result.value) {
-                let almacenCS = $("#almacenCS").val();
-                let excelCS = $("#excelCS").val();
-                let validacion = true;
+    Swal.fire({
+        icon: "question",
+        title: "¿Está seguro de ejecutar la carga?",
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Aceptar",
+        cancelButtonText: "Cancelar"
+    }).then(result => {
+        if (result.value) {
+            let almacenCS = $("#almacenCS").val();
+            let excelCS = $("#excelCS").val();
 
-                if (almacenCS == "") {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Verifique los datos.",
-                        html: "<b class='color-red'>Debe seleccionar un almacen.</b>",
-                        showConfirmButton: true,
-                        timer: 4000
-                    });
-                    $("#almacenCS").focus();
-                    validacion = false;
-                    return false;
-                }
-
-                if (excelCS == "") {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Verifique los datos.",
-                        html: "<b class='color-red'>Debe seleccionar un archivo.</b>",
-                        showConfirmButton: true,
-                        timer: 4000
-                    });
-                    $("#excelCS").focus();
-                    validacion = false;
-                    return false;
-                }
-
-                if (validacion == true) {
-                    let url = base_url + "index.php/almacen/inventario/loadStockInventory";
-                    let info = new FormData($('#formCargaStock')[0]);
-                    $.ajax({
-                        type: 'POST',
-                        url: url,
-                        dataType: 'json',
-                        data: info,
-                        contentType: false,
-                        processData: false,
-                        success: function(data) {
-                            Swal.fire({
-                                icon: data.result,
-                                title: data.titulo,
-                                html: data.message,
-                                showConfirmButton: true
-                            });
-
-                            if (data.result == "success") {
-                                $("#formCargaStock")[0].reset();
-                                $("#ajusteCS").val("");
-                            } else {
-                                $("#formCargaStock")[0].reset();
-                                $("#ajusteCS").val(data.ajuste);
-                                search(false);
-                            }
-                        },
-                        complete: function() {}
-                    });
-                }
+            if (almacenCS == "") {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Verifique los datos.",
+                    html: "<b class='color-red'>Debe seleccionar un almacén.</b>",
+                    showConfirmButton: true,
+                    timer: 4000
+                });
+                $("#almacenCS").focus();
+                return false;
             }
-        });
-    }
+
+            if (excelCS == "") {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Verifique los datos.",
+                    html: "<b class='color-red'>Debe seleccionar un archivo.</b>",
+                    showConfirmButton: true,
+                    timer: 4000
+                });
+                $("#excelCS").focus();
+                return false;
+            }
+
+            // Mostrar loader personalizado con barra de progreso
+            Swal.fire({
+                title: 'Cargando inventario...',
+                html: `
+                    <div style="text-align:center;">
+                        <img src="<?= base_url() . 'images/loading.gif?' . IMG; ?>" alt="Cargando..." style="width:60px; height:60px;"><br>
+                        <p style="margin: 10px 0;">Procesando archivo, por favor espere...</p>
+                        <div id="barraContainer" style="width: 100%; background-color: #eee; border-radius: 5px; height: 20px;">
+                            <div id="barraProgreso" style="width: 0%; height: 100%; background-color: #28a745; border-radius: 5px;"></div>
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    let progreso = 0;
+                    const barra = Swal.getHtmlContainer().querySelector('#barraProgreso');
+                    const intervalo = setInterval(() => {
+                        progreso += Math.random() * 10;
+                        if (progreso >= 100) progreso = 100;
+                        barra.style.width = progreso + '%';
+                        if (progreso >= 100) clearInterval(intervalo);
+                    }, 200);
+                }
+            });
+
+            // Iniciar AJAX para cargar el inventario
+            let url = base_url + "index.php/almacen/inventario/loadStockInventory";
+            let info = new FormData($('#formCargaStock')[0]);
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: info,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    Swal.fire({
+                        icon: data.result,
+                        title: data.titulo,
+                        html: data.message,
+                        showConfirmButton: true
+                    });
+
+                    if (data.result == "success") {
+                        $("#formCargaStock")[0].reset();
+                        $("#ajusteCS").val("");
+                    } else {
+                        $("#formCargaStock")[0].reset();
+                        $("#ajusteCS").val(data.ajuste);
+                        search(false);
+                    }
+                }
+            });
+        }
+    });
+}
 
 
     function busqueda_producto_enter() {
@@ -1130,55 +1139,51 @@
         }
     }
 
-    function busca_barcode(codigo,almacen){
-        let barcode = $("#bar_code").val();
-        let getProductoCodigo = $("#getProductoCodigo").val();
-        var url = base_url + "index.php/almacen/inventario/searchProductoBarcode/";
-                $.ajax({
-                    url: url,
-                    type: "POST",
-                    data: {
-                        codigo: codigo,
-                        almacen: almacen
-                    },
-                    dataType: "json",
-                   
-                    success: function (data) {
-                        
-                        if (data[0].result=="success") {
-                            $("#productoCodigo").val(data[0].id);
-                            $("#getProductoDescripcion").val(data[0].nombre);
-                            $("#stockProducto").val(data[0].stock);
-                            $("#cantidadProducto").val("1");
-                            $("#getProductoCodigo").val("");
-                            $("#getProductoCodigo").focus();
-                            $("#bar_code").val(codigo);
-                        }else{
-                            $("#productoCodigo").val("");
-                            $("#getProductoDescripcion").val("");
-                            $("#stockProducto").val("");
-                            $("#cantidadProducto").val("1");
-                            $("#getProductoCodigo").val("");
-                            $("#getProductoCodigo").focus();
-                            $("#bar_code").val("");
-                        }
-                        
-                        
-                        
-                    },
-                    error: function (XHR, error) {
-                        
-                        Swal.fire({
-                            icon: "warning",
-                            title: "Hubo un problema.",
-                            html: "<b class='color-red'>Intenta de nuevo!</b>",
-                            showConfirmButton: true,
-                            timer: 2000
-                        });
-                       
-                    }
-                });
-    }
+    function busca_barcode(codigo, almacen) {
+    var url = base_url + "index.php/almacen/inventario/searchProductoBarcode/";
+    $.ajax({
+        url: url,
+        type: "POST",
+        data: {
+            codigo: codigo,
+            almacen: almacen
+        },
+        dataType: "json",
+        success: function (data) {
+            if (data[0].result == "success") {
+                $("#productoCodigo").val(data[0].id);
+                $("#getProductoDescripcion").val(data[0].nombre);
+                $("#stockProducto").val(data[0].stock);
+                $("#cantidadProducto").val("1");
+                $("#getProductoCodigo").val(data[0].codigo);  // Asignar código aquí para evitar vacío
+                $("#getProductoCodigo").focus();
+                $("#bar_code").val(codigo);
+
+                // Llamar a addProducto para agregar el producto automáticamente
+                addProducto();
+
+            } else {
+                $("#productoCodigo").val("");
+                $("#getProductoDescripcion").val("");
+                $("#stockProducto").val("");
+                $("#cantidadProducto").val("1");
+                $("#getProductoCodigo").val("");
+                $("#getProductoCodigo").focus();
+                $("#bar_code").val("");
+            }
+        },
+        error: function (XHR, error) {
+            Swal.fire({
+                icon: "warning",
+                title: "Hubo un problema.",
+                html: "<b class='color-red'>Intenta de nuevo!</b>",
+                showConfirmButton: true,
+                timer: 2000
+            });
+        }
+    });
+}
+
 
     function sumar_agregado(argument) {
         

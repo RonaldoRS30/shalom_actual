@@ -203,14 +203,18 @@ div.image-container {
             
         </div>
         <div class="row fuente8 py-1">
-            <?php if ($this->session->userdata('rol')=="7000"){ ?>
+<?php if ($this->session->userdata('rol') == "1" || $this->session->userdata('rol') == "7000") { ?>
             <div class="col-sm-2 col-md-2 col-lg-2 form-group">
+                <?php if ($this->session->userdata('rol') == "7000") { ?>
+
                 <label for="salida">REVISION DE STOCK</label> 
                 <a type="button" class="btn btn-success" id="balance_stock_total" name="balance_stock_total">REVISAR KARDEX</a>
-            </div>    
+            </div>   
+            <?php } ?>
+
             <div class="col-sm-2 col-md-2 col-lg-2 form-group ">
                 
-                <a type="button" class="btn btn-success" id="dele_al_kardex" name="dele_al_kardex">INGRESO A KARDEX</a>
+                <!-- <a type="button" class="btn btn-success" id="dele_al_kardex" name="dele_al_kardex">INGRESO A KARDEX</a> -->
                 
             </div>
 

@@ -12,8 +12,8 @@ date_default_timezone_set('America/Lima');
 |
 */
 
-#$config['base_url']	= "https://www.osafact.com/desarrollo/demoAct";
-$config['base_url']	= "http://localhost/demo_erp_actual";
+$config['base_url']	= "https://www.osafact.com/desarrollo/shalom";
+//$config['base_url']	= "http://localhost/shalom_actual";
 
 #Super Usuario: ccapasistemas
 #password: #ccapa_user

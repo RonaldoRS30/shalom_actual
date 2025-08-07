@@ -172,42 +172,42 @@ class Inventario extends Controller
         die(json_encode($json));
     }
 
-    public function searchProductoBarcode($response = "json", $request = NULL)
-    {
-        $valDefault = "codigo";
-        $filter = new stdClass();
-    
-        $almacen = trim($this->input->post("almacen"));
-
-        $filter->start = 0;
-        $filter->length = 15;
-        $filter->cod_producto = trim($this->input->post("codigo"));
-        $filter->PROD_FlagBienServicio = "B";
+        public function searchProductoBarcode($response = "json", $request = NULL)
+        {
+            $valDefault = "codigo";
+            $filter = new stdClass();
         
-        $json = array();
-        $productosInfo = $producto = $this->producto_model->search_barcode($filter);
-        //var_dump($productosInfo);exit();
-        if ($productosInfo != NULL) {
-            foreach ($productosInfo as $row => $col) {
-                
-                $stockInfo = $this->almacenproducto_model->obtener($almacen, $col->PROD_Codigo);
-                $json[] = array(
-                    "result"=> "success",
-                    "value" => ($valDefault == "codigo") ? $col->PROD_CodigoUsuario : $col->PROD_Nombre,
-                    "label" => $col->PROD_CodigoUsuario . " - " . $col->PROD_Nombre,
-                    "id" => $col->PROD_Codigo,
-                    "codigo" => $col->PROD_CodigoUsuario,
-                    "nombre" => $col->PROD_Nombre,
-                    "stock" => ($stockInfo != NULL) ? $stockInfo[0]->ALMPROD_Stock : 0,
-                    "almacen" => $almacen,
-                    "flagBS" => $col->PROD_FlagBienServicio
-                );
+            $almacen = trim($this->input->post("almacen"));
+
+            $filter->start = 0;
+            $filter->length = 15;
+            $filter->cod_producto = trim($this->input->post("codigo"));
+            $filter->PROD_FlagBienServicio = "B";
+            
+            $json = array();
+            $productosInfo = $producto = $this->producto_model->search_barcode($filter);
+            //var_dump($productosInfo);exit();
+            if ($productosInfo != NULL) {
+                foreach ($productosInfo as $row => $col) {
+                    
+                    $stockInfo = $this->almacenproducto_model->obtener($almacen, $col->PROD_Codigo);
+                    $json[] = array(
+                        "result"=> "success",
+                        "value" => ($valDefault == "codigo") ? $col->PROD_CodigoUsuario : $col->PROD_Nombre,
+                        "label" => $col->PROD_CodigoUsuario . " - " . $col->PROD_Nombre,
+                        "id" => $col->PROD_Codigo,
+                        "codigo" => $col->PROD_CodigoUsuario,
+                        "nombre" => $col->PROD_Nombre,
+                        "stock" => ($stockInfo != NULL) ? $stockInfo[0]->ALMPROD_Stock : 0,
+                        "almacen" => $almacen,
+                        "flagBS" => $col->PROD_FlagBienServicio
+                    );
+                }
+            }else{
+                $json[] = array("result"=> "nofound");
             }
-        }else{
-            $json[] = array("result"=> "nofound");
+            die(json_encode($json));
         }
-        die(json_encode($json));
-    }
 
     public function guardarInventario()
     {
@@ -563,6 +563,48 @@ class Inventario extends Controller
         }
     }
 
+private function setInventoryDetailsExcel($val)
+{
+    $size = count($val->producto);
+    if ($size > 0) {
+        for ($i = 0; $i < $size; $i++) {
+            if ($val->flag[$i] == "1" && $val->cantidad[$i] >= 0) {
+
+                $tipo_oper = ($val->ajusteDT[$i] == "") ? 1 : 2;
+
+                // REGISTRO DE KARDEX
+                $cKardex = new stdClass();
+                $cKardex->codigo_documento  = $val->ajuste;
+                $cKardex->tipo_docu         = "I";
+                $cKardex->producto          = $val->producto[$i];
+                $cKardex->nombre_producto   = NULL;
+                $cKardex->cantidad          = $val->cantidad[$i];
+                $cKardex->serie             = $val->serie;
+                $cKardex->numero            = $val->numero;
+                $cKardex->nombre_almacen    = NULL;
+                $cKardex->moneda            = NULL;
+                $cKardex->afectacion        = NULL;
+                $cKardex->costo             = NULL;
+                $cKardex->precio_con_igv    = NULL;
+                $cKardex->subtotal          = NULL;
+                $cKardex->total             = NULL;
+                $cKardex->compania          = $val->compania;
+                $cKardex->tipo_oper         = $tipo_oper; // 1: Reemplazo 2: Suma
+                $cKardex->tipo_movimiento   = "INGRESO POR INVENTARIO";
+                $cKardex->nombre            = NULL;
+                $cKardex->numdoc            = NULL;
+                $cKardex->almacen           = $val->almacen;
+                $cKardex->cliente           = NULL;
+                $cKardex->proveedor         = NULL;
+                $cKardex->usuario           = $this->usuario;
+                $cKardex->estado            = 1;
+                $this->registrar_kardex($cKardex);
+            }
+        }
+    }
+}
+
+
     /** End Luis Valdes **/
 
 
@@ -581,13 +623,13 @@ class Inventario extends Controller
             if ($detailsInfo != NULL) {
                 foreach ($detailsInfo as $i => $val) {
                     $details[] = array(
-                        "registro"              => $val->INVD_Codigo,
-                        "producto"              => $val->PROD_Codigo,
+                        "registro"              => $val->INVD_Codigo,   
+                       "producto"              => $val->PROD_Codigo,
                         "codigo"                => $val->PROD_CodigoUsuario,
                         "descripcion"           => $val->PROD_Nombre,
-                        "stock"                 => $val->INVD_Cantidad,
+                        "stock"                 => $val->ALMPROD_Stock,
                         "fecha_ingreso"         => $val->INVD_FechaRegistro,
-                        "cantidad"              => $val->ALMPROD_Stock,
+                        "cantidad"              => $val->INVD_Cantidad,
                         "responsable"           => $val->PERSP_Codigo,
                         "responsable_nombre"    => "$val->PERSC_Nombre $val->PERSC_ApellidoPaterno</p>",
                     );
@@ -1190,111 +1232,159 @@ class Inventario extends Controller
         die(json_encode($json));
     }
 
-    public function loadStockInventory()
-    {
-        $json_result = "";
-        $json_titulo = "";
-        $json_message = "";
-        $id = "";
+public function loadStockInventory()
+{
+    $json_result = "";
+    $json_titulo = "";
+    $json_message = "";
+    $id = "";
 
-        $patch = "documentos/stock/";
-        if (!file_exists($patch)) {
-            mkdir($patch);
-        }
-        $this->db->trans_start();
+    $patch = "documentos/stock/";
+    if (!file_exists($patch)) {
+        mkdir($patch, 0755, true);
+    }
+    $this->db->trans_start();
 
-        if (!empty($_FILES['excelCS']['name'])) {
-            $name = explode(".", $_FILES['excelCS']['name']);
-            $size = count($name);
-            if ($size > 0) {
-                $file = "cargaStock." . $name[--$size];
-                $ext = array("csv", "xls", "xlsx");
-                if (in_array($name[$size], $ext)) {
-                    if (move_uploaded_file($_FILES['excelCS']['tmp_name'], $patch . "/" . $file)) {
-                        $almacen = $this->input->post('almacenCS');
+    if (!empty($_FILES['excelCS']['name'])) {
+        $name = explode(".", $_FILES['excelCS']['name']);
+        $size = count($name);
+        if ($size > 0) {
+            $file = "cargaStock." . $name[--$size];
+            $ext = array("csv", "xls", "xlsx");
+            if (in_array($name[$size], $ext)) {
+                if (move_uploaded_file($_FILES['excelCS']['tmp_name'], $patch . "/" . $file)) {
+                    $almacen = $this->input->post('almacenCS');
+                    $ajuste = $this->input->post("ajusteCS");
+                    $compania = trim($this->compania);
 
-                        $ajuste = $this->input->post("ajusteCS");
-                        
-                        if ($ajuste != "") {
-                            $ajusteInfo = $this->inventario_model->getAjuste($ajuste);
-                            if ($ajusteInfo != NULL) {
-                                $id = $ajuste;
-                                if ($ajusteInfo[0]->ALMAP_Codigo != $almacen) {
-                                    $filterAjust = new stdClass();
-                                    $filterAjust->ALMAP_Codigo = $almacen;
-                                    $filterAjust->INVA_FechaModificacion = date("Y-m-d H:i:s");
-                                    $this->inventario_model->actualizarAjuste($id, $filterAjust);
-                                }
-                            } else {
-                                $id = false;
+                    // Crear o actualizar ajuste
+                    if ($ajuste != "") {
+                        $ajusteInfo = $this->inventario_model->getAjuste($ajuste);
+                        if ($ajusteInfo != NULL) {
+                            $id = $ajuste;
+                            if ($ajusteInfo[0]->ALMAP_Codigo != $almacen) {
+                                $filterAjust = new stdClass();
+                                $filterAjust->ALMAP_Codigo = $almacen;
+                                $filterAjust->INVA_FechaModificacion = date("Y-m-d H:i:s");
+                                $this->inventario_model->actualizarAjuste($id, $filterAjust);
                             }
                         } else {
-                            $filter = new stdClass();
-                            $filter->INVE_Titulo = $name[0];
-                            $filter->ALMAP_Codigo = $almacen;
-                            $filter->COMPP_Codigo = trim($this->compania);
-                            $filter->INVE_Serie = "INV0" . $this->compania;
-                            $filter->INVE_Numero = $this->correlativeInventory("controller");
-                            $filter->INVE_FechaInicio = date("Y-m-d H:i:s");
-                            $filter->INVE_FechaRegistro = date("Y-m-d H:i:s");
-                            $filter->INVE_FlagEstado = "1";
-                            
-                            $id = $this->inventario_model->setInventory($filter);
+                            $id = false;
                         }
+                    } else {
+                        $filter = new stdClass();
+                        $filter->INVE_Titulo = $name[0];
+                        $filter->ALMAP_Codigo = $almacen;
+                        $filter->COMPP_Codigo = $compania;
+                        $filter->INVE_Serie = "INV0" . $compania;
+                        $filter->INVE_Numero = $this->inventario_model->correlativoInventario($compania) + 1;
+                        $filter->INVE_FechaInicio = date("Y-m-d H:i:s");
+                        $filter->INVE_FechaRegistro = date("Y-m-d H:i:s");
+                        $filter->INVE_FlagEstado = "1";
 
-                        if ($id) {
-                            $json_result = "success";
-                            $json_message = "Inventario registrado";
+                        $id = $this->inventario_model->guardarInventario($filter);
+                    }
 
-                            /** Responsable **/
-                            $resp = new stdClass();
-                            $resp->PERSP_Codigo = $this->persona;
-                            $resp->INVER_FechaRegistro = date("Y-m-d H:i:s");
-                            $resp->INVER_Observacion = "Carga masiva de stock";
-                            $resp->INVE_Codigo = $id;
-                            $this->inventario_model->guardarInventarioResponsable($resp);
+                    if ($id) {
+                        $json_result = "success";
+                        $json_message = "Inventario registrado";
 
-                            /** Inicia la importacion a la DB en tabla intermedia **/
-                            $filterCarga = new stdClass();
-                            $filterCarga->file = $patch . "/" . $file;
-                            $filterCarga->ext = $name[$size];
-                            $filterCarga->inventario = $id;
-                            $filterCarga->almacen = $almacen;
-                            $filterCarga->persona = $this->persona;
+                        // Guardar responsable
+                        $resp = new stdClass();
+                        $resp->PERSP_Codigo = $this->persona;
+                        $resp->INVER_FechaRegistro = date("Y-m-d H:i:s");
+                        $resp->INVER_Observacion = "Carga masiva de stock";
+                        $resp->INVE_Codigo = $id;
+                        $this->inventario_model->guardarInventarioResponsable($resp);
 
-                            $result = $this->inventario_model->cargaStock($filterCarga, $id);
+                        // Procesar carga masiva
+                        $filterCarga = new stdClass();
+                        $filterCarga->file = $patch . "/" . $file;
+                        $filterCarga->ext = $name[$size];
+                        $filterCarga->inventario = $id;
+                        $filterCarga->almacen = $almacen;
+                        $filterCarga->persona = $this->persona;
 
-                            $json_result = $result["result"];
+                        $result = $this->inventario_model->cargaStock($filterCarga, $id);
+
+                        if ($result["result"] === "success") {
+                            // Obtener detalles cargados para registrar en kardex
+                            $detallesArchivo = $this->inventario_model->getDetallesCargaMasiva($id);
+
+                            // Validar y preparar datos para setInventoryDetails
+                            $productos = [];
+                            $cantidades = [];
+                            $flags = [];
+
+                            foreach ($detallesArchivo as $detalle) {
+                                $productos[] = $detalle['PROD_Codigo'];
+                                // Convertir cantidad a float, evitar null o vacío
+                                $cantidad = floatval($detalle['INVD_Cantidad']);
+                                if ($cantidad <= 0) {
+                                    // Puedes manejar error o asignar mínimo 1
+                                    $cantidad = 1;
+                                }
+                                $cantidades[] = $cantidad;
+                                $flags[] = 1; // Asumiendo flag 1 = entrada
+                            }
+
+                            $details = new stdClass();
+                            $details->ajuste = $id;
+                            $details->serie = isset($filter->INVE_Serie) ? $filter->INVE_Serie : "";
+                            $details->numero = isset($filter->INVE_Numero) ? $filter->INVE_Numero : "";
+                            $details->almacen = $almacen;
+                            $details->producto = $productos;
+                            $details->cantidad = $cantidades;
+                            $details->flag = $flags;
+                            $details->compania = $compania;
+
+                            // Registrar movimientos en kardex
+                            $this->setInventoryDetailsExcel($details);
+
                             $json_titulo = "Ejecución completada";
                             $json_message = $result["details"];
                         } else {
                             $json_result = "error";
-                            $json_titulo = "Error al generar el ajuste, intentelo nuevamente.";
+                            $json_titulo = "Error en la carga de stock";
+                            $json_message = $result["details"];
                         }
                     } else {
                         $json_result = "error";
-                        $json_titulo = "Error al intentar cargar el archivo";
-                        $json_message = $this->upload->display_errors();
+                        $json_titulo = "Error al generar el ajuste, intentelo nuevamente.";
                     }
                 } else {
                     $json_result = "error";
-                    $json_titulo = "Extensión de archivo no permitida.";
+                    $json_titulo = "Error al intentar cargar el archivo";
+                    $json_message = $this->upload->display_errors();
                 }
             } else {
                 $json_result = "error";
-                $json_titulo = "Extensión de archivo no reconocible.";
+                $json_titulo = "Extensión de archivo no permitida.";
             }
-        }
-
-        if (!$this->db->trans_status() || $json_result == 'error') {
-            $this->db->trans_rollback();
         } else {
-            $this->db->trans_commit();
+            $json_result = "error";
+            $json_titulo = "Extensión de archivo no reconocible.";
         }
-
-        $json = array("result" => $json_result, "titulo" => $json_titulo, "message" => $json_message, "ajuste" => $id);
-        die(json_encode($json));
+    } else {
+        $json_result = "error";
+        $json_titulo = "No se ha seleccionado ningún archivo.";
     }
+
+    if (!$this->db->trans_status() || $json_result == 'error') {
+        $this->db->trans_rollback();
+    } else {
+        $this->db->trans_commit();
+    }
+
+    $json = array(
+        "result" => $json_result,
+        "titulo" => $json_titulo,
+        "message" => $json_message,
+        "ajuste" => $id
+    );
+    die(json_encode($json));
+}
+
     ## Dev: Luis Valdes -> End
 
     ## Dev: Luis Valdes -> Begin
@@ -1511,6 +1601,7 @@ class Inventario extends Controller
         /** HOJA 0 COTIZACIÓN **/
         $this->excel->setActiveSheetIndex($hoja);
         $this->excel->getActiveSheet()->setTitle("Formato de carga");
+        $this->excel->getActiveSheet()->getStyle('A')->getNumberFormat()->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_TEXT);
 
         $i = "A";
         $this->excel->getActiveSheet()->getColumnDimension($i)->setWidth("25");
@@ -1528,7 +1619,9 @@ class Inventario extends Controller
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("E$lugar",  "CANTIDAD");
         $this->excel->getActiveSheet()->getStyle("A$lugar:E$lugar")->applyFromArray($estiloTitulo);
         $lugar++;
-        
+        $this->excel->getActiveSheet()->getStyle('A')->getNumberFormat()->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_TEXT);
+        $this->excel->getActiveSheet()->getStyle('B')->getNumberFormat()->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_TEXT);
+
         /** Items **/
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("A$lugar",  "CODE001");
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("B$lugar",  "EL NOMBRE DEL PRODUCTO");
