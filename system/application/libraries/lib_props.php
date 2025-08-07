@@ -1654,20 +1654,20 @@ class Lib_props
     $this->pdf->writeHTML($observacionesHTML, true, false, true, '');
   
 
- $logoBCP = '<img width="50px" src="' . base_url() . 'images/bancos/bcp.png" style="vertical-align: top;">';
+//  $logoBCP = '<img width="50px" src="' . base_url() . 'images/bancos/bcp.png" style="vertical-align: top;">';
 
-$bancos_logos = '
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-    <tr>
-      <td style="text-align: left; vertical-align: top; padding: 0;">
-        ' . $logoBCP . '<br><br>
-        <b>CTA CTE BCP SOLES:</b><br>
-        Cta.Cte: 191-2125145-0-10<br>
-        CCI: 00219100212514501058
-      </td>
-    </tr>
-  </table>
-';
+// $bancos_logos = '
+//   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+//     <tr>
+//       <td style="text-align: left; vertical-align: top; padding: 0;">
+//         ' . $logoBCP . '<br><br>
+//         <b>CTA CTE BCP SOLES:</b><br>
+//         Cta.Cte: 191-2125145-0-10<br>
+//         CCI: 00219100212514501058
+//       </td>
+//     </tr>
+//   </table>
+// ';
 
 $this->pdf->writeHTML($bancos_logos, true, false, true, '');
 
@@ -3645,20 +3645,20 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
         $othersFormasHTML .= ': '.strtoupper($others->FORPAC_Descripcion).': '.$others->MONED_Simbolo.' '.(number_format($others->monto, 2)).'';
       }
     } 
- $logoBCP = '<img width="50px" src="' . base_url() . 'images/bancos/bcp.png" style="vertical-align: top;">';
+ //$logoBCP = '<img width="50px" src="' . base_url() . 'images/bancos/bcp.png" style="vertical-align: top;">';
 
-$bancos_logos = '
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-    <tr>
-      <td style="text-align: left; vertical-align: top; padding: 0;">
-        ' . $logoBCP . '<br><br>
-        <b>CTA CTE BCP SOLES:</b><br>
-        Cta.Cte: 191-2125145-0-10<br>
-        CCI: 00219100212514501058
-      </td>
-    </tr>
-  </table>
-';
+// $bancos_logos = '
+//   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+//     <tr>
+//       <td style="text-align: left; vertical-align: top; padding: 0;">
+//         ' . $logoBCP . '<br><br>
+//         <b>CTA CTE BCP SOLES:</b><br>
+//         Cta.Cte: 191-2125145-0-10<br>
+//         CCI: 00219100212514501058
+//       </td>
+//     </tr>
+//   </table>
+// ';
 
 $this->pdf->writeHTML($bancos_logos, true, false, true, '');
 
