@@ -365,9 +365,12 @@
                         <td style="width:08%" data-orderable="true">Serie-Nro</td>
                         <td style="width:33%" data-orderable="true">NOMBRE</td>
                         <td style="width:38%" data-orderable="true">DESCRIPCION</td>
+                        <td style="width:38%" data-orderable="true">MARCA</td>
                         <td style="width:05%" data-orderable="false">UNIDAD</td>
                         <td style="width:08%" data-orderable="false">CANTIDAD</td>
                         <td style="width:08%" data-orderable="false">TOTAL</td>
+                         <td style="width:38%" data-orderable="true">VENDEDOR</td>
+
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -827,6 +830,9 @@
         let searchProducto      = "";
         let cliente             = "";
         let moneda              = "";
+        let vendedor           = ""; // Nuevo campo para vendedor
+
+
         $(".mes").css("display","none");
         $(".anio").css("display","none");
         $(".rango_fechas").css("display","block");
@@ -837,6 +843,8 @@
             searchResponsable   = $("#searchResponsable").val();
             searchProducto      = $("#searchProducto").val();
             moneda              = $("#moneda").val();
+            vendedor           = $("#searchVendedor").val(); // Obtenemos el vendedor seleccionado
+
         } else {
             
             $("#searchFechaDesde").val("");
@@ -848,6 +856,8 @@
             $("#search_documento").val("");
             $("#nombre_cliente").val("");
             $("#moneda").val("1");
+             $("#searchVendedor").val(""); // Limpiamos el campo vendedor
+
         }
 
         $('#tabla-detallado').DataTable({
@@ -865,7 +875,9 @@
                     cliente: cliente,
                     moneda: moneda,
                     producto: searchProducto,
-                    tipo_oper:tipo_oper
+                    tipo_oper:tipo_oper,
+                    vendedor: vendedor // Enviamos el parámetro vendedor
+
                 },
                 beforeSend: function() {},
                 error: function() {},

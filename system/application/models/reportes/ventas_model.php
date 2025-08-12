@@ -2709,7 +2709,18 @@ if ($filter->tipo_oper=="V") {
   LEFT JOIN cji_empresa e ON e.EMPRP_Codigo = cc.EMPRP_Codigo
   LEFT JOIN cji_persona p ON p.PERSP_Codigo = cc.PERSP_Codigo
   WHERE cc.CLIP_Codigo = c.CLIP_Codigo
-  ) as Documento,";
+  ) as Documento,
+  
+   (SELECT CONCAT_WS(' ', p.PERSC_Nombre, p.PERSC_ApellidoPaterno, p.PERSC_ApellidoMaterno)
+            FROM cji_usuario u
+            JOIN cji_persona p ON p.PERSP_Codigo = u.PERSP_Codigo
+            JOIN cji_directivo d ON d.PERSP_Codigo = p.PERSP_Codigo
+            JOIN cji_cargo cg ON cg.CARGP_Codigo = d.CARGP_Codigo
+            WHERE u.USUA_Codigo = c.USUA_Codigo
+            AND (cg.CARGC_Nombre LIKE '%VENDEDOR%' OR cg.CARGC_Nombre LIKE '%VENTAS%')
+            AND p.PERSC_FlagEstado = '1'
+            AND d.DIREC_FlagEstado = '1'
+        ) as Vendedor,";
  
 }else{
   $razon_social="(SELECT CONCAT_WS(' ', e.EMPRC_RazonSocial, p.PERSC_Nombre, p.PERSC_ApellidoPaterno, p.PERSC_ApellidoMaterno)
@@ -2724,12 +2735,24 @@ if ($filter->tipo_oper=="V") {
   LEFT JOIN cji_empresa e ON e.EMPRP_Codigo = pp.EMPRP_Codigo
   LEFT JOIN cji_persona p ON p.PERSP_Codigo = pp.PERSP_Codigo
   WHERE pp.PROVP_Codigo = c.PROVP_Codigo
-  ) as Documento, ";
+  ) as Documento, 
+   
+   (SELECT CONCAT_WS(' ', p.PERSC_Nombre, p.PERSC_ApellidoPaterno, p.PERSC_ApellidoMaterno)
+            FROM cji_usuario u
+            JOIN cji_persona p ON p.PERSP_Codigo = u.PERSP_Codigo
+            JOIN cji_directivo d ON d.PERSP_Codigo = p.PERSP_Codigo
+            JOIN cji_cargo cg ON cg.CARGP_Codigo = d.CARGP_Codigo
+            WHERE u.USUA_Codigo = c.USUA_Codigo
+            AND (cg.CARGC_Nombre LIKE '%VENDEDOR%' OR cg.CARGC_Nombre LIKE '%VENTAS%')
+            AND p.PERSC_FlagEstado = '1'
+            AND d.DIREC_FlagEstado = '1'
+        ) as Vendedor,
+  ";
 }
 
         $where  .= " AND c.CPC_Fecha BETWEEN '$filter->fech1' AND '$filter->fech2' ";
 
-        $rec = "SELECT c.CPC_Fecha as fecha, c.CPC_FechaRegistro, c.CPC_Serie as serie, c.CPC_Numero as numero, cd.*, pd.PROD_Nombre, m.MARCC_CodigoUsuario, c.CLIP_Codigo, mo.MONED_Simbolo as moneda_simbolo, mo.MONED_Codigo, und.UNDMED_Simbolo as unidad, pd.PROD_CodigoUsuario as prod_cod, 
+        $rec = "SELECT c.CPC_Fecha as fecha, c.CPC_FechaRegistro, c.CPC_Serie as serie, c.CPC_Numero as numero, cd.*, pd.PROD_Nombre, cd.PROD_Codigo, m.MARCC_CodigoUsuario, c.CLIP_Codigo, mo.MONED_Simbolo as moneda_simbolo, mo.MONED_Codigo, und.UNDMED_Simbolo as unidad, pd.PROD_CodigoUsuario as prod_cod, 
                   
               $razon_social
 
@@ -2824,6 +2847,20 @@ if ($filter->tipo_oper=="V") {
             return $info;
       }
 
+
+public function obtenerVendedorPorComprobante($serie, $numero)
+{
+    $this->db->select('CPC_Vendedor');
+    $this->db->from('cji_comprobante');
+    $this->db->where('CPC_Serie', $serie);
+    $this->db->where('CPC_Numero', $numero);
+    $query = $this->db->get();
+    
+    if ($query->num_rows() > 0) {
+        return $query->row()->CPC_Vendedor;
+    }
+    return null; // Si no encuentra nada
+}
 
       public function ventas_producto_mes($filter)
       {

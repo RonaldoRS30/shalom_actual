@@ -1715,18 +1715,24 @@ class Producto_model extends model{
         }
     }
 
-    public function obtener_marca_modelo_por_producto($producto)
-    {
-        $sql = "SELECT * FROM cji_producto p INNER JOIN cji_marca m ON p.MARCP_Codigo = m.MARCP_Codigo WHERE p.PROD_Codigo =" . $producto . "";
-        $query = $this->db->query($sql);
-        if ($query->num_rows > 0) {
-            foreach ($query->result() as $fila) {
-                $data[] = $fila;
-            }
-            return $data;
-        }
+public function obtener_marca_modelo_por_producto($producto)
+{
+    // Validar que el parámetro no esté vacío
+    if (empty($producto)) {
         return array();
     }
+
+    // Usar consultas preparadas para seguridad
+    $sql = "SELECT m.* 
+            FROM cji_producto p 
+            INNER JOIN cji_marca m ON p.MARCP_Codigo = m.MARCP_Codigo 
+            WHERE p.PROD_Codigo = ?";
+    
+    $query = $this->db->query($sql, array($producto));
+    
+    // Versión más eficiente para obtener resultados
+    return ($query->num_rows() > 0) ? $query->result() : array();
+}
 
 
     ///aumentado stv

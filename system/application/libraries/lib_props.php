@@ -1683,41 +1683,67 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
     $infoBancosHTML = "";
     $infoBancos     = $this->ci->banco_model->ctas_bancarias($empresaInfo[0]->EMPRP_Codigo);
 
-    if ($infoBancos != NULL) {
-        $cuentaCCIHTML="";
-        $infoBancosHTML .= '<tr>
-            <td style="width:100%; font-weight: bold;">CUENTAS BANCARIAS</td>
-            </tr>
-            <tr>
-            ';
-        foreach ($infoBancos as $indice => $val) {
-          $tipo_cuenta = ($val->CUENT_TipoCuenta == 1) ? "AHR" : "CTE";
-          $moneda_banco = ($val->MONED_Codigo == 1) ? "SOLES" : "DÓLARES";
-          $cuentaCCI = $val->CUENT_Interbancaria!="" ? $val->CUENT_Interbancaria:""; 
-             $cuentaCCIHTML = ($val->CUENT_Interbancaria != "") ?
-            '
-             <td style="width:05%; font-weight:bold;">CCI:</td>
-             <td style="width:30%; font-weight:normal;">'.$cuentaCCI.'</td>' : "";
-
-          $infoBancosHTML .= '
+      if ($infoBancos != NULL) {
+          $infoBancosHTML .= '<tr>
+              <td style="width:16cm; font-weight: bold;">CUENTAS BANCARIAS</td>
+              </tr>
               <tr>
-                <td style="width:25%; font-weight:bold;">BANCO ' . $val->BANC_Siglas . ' '.$tipo_cuenta.' '.$moneda_banco.':</td>
-                <td style="width:20%; font-weight:normal;">' . $val->CUENT_NumeroEmpresa . '</td>
-                '.$cuentaCCIHTML.'
-              </tr>';
+              <tr>
+                  <td style="width:1.5cm; font-weight:bold;">TITULAR:</td>
+                  <td style="width:15cm; font-weight:normal;">' . $infoBancos[0]->CUENT_Titular . '</td>
+                  <td style="font-weight:bold;"></td>
+                  <td style="font-weight:bold;"></td>
+                  <td style="font-weight:bold;"></td>
+                  <td style="font-weight:normal;"></td>
+                </tr>
+              ';
+          foreach ($infoBancos as $indice => $val) {
+            $tipo_cuenta = ($val->CUENT_TipoCuenta == 1) ? "AHORROS" : "CORRIENTE";
+            $infoBancosHTML .= '
+                
+                <tr>
+                  <td style="width:1.5cm; font-weight:bold;">BANCO:</td>
+                  <td style="width:1.3cm; font-weight:normal;">' . $val->BANC_Siglas . '</td>
+                  <td style="width:1.5cm; font-weight:bold;">TIPO:</td>
+                  <td style="width:3.5cm; font-weight:normal;">' . $tipo_cuenta . '</td>
+                  <td style="width:1.5cm; font-weight:bold;">Nro:</td>
+                  <td style="width:3.5cm; font-weight:normal;">' . $val->CUENT_NumeroEmpresa . '</td>
+                </tr>';
 
-             
-              
+               $cuentaCCI = $val->CUENT_Interbancaria!="" ? $val->CUENT_Interbancaria:""; 
+               $cuentaCCI = ($val->CUENT_Interbancaria != "") ?
+              '
+               <tr>
+                  <td style="width:1.5cm; font-weight:bold;">BANCO:</td>
+                  <td style="width:1.3cm; font-weight:normal;">' . $val->BANC_Siglas . '</td>
+                  <td style="width:1.5cm; font-weight:bold;">Nro CCI:</td>
+                  <td style="width:3.5cm; font-weight:normal;">' . $val->CUENT_Interbancaria . '</td>
+                </tr>' : "";
+                
+          }
         }
-      }
 
-    $footerHTML = '<table cellspacing="0.05cm" border="0">
-                            ' . $infoBancosHTML . '
-                            <tr>
-                            <td style="width:16cm;">REPRESENTACIÓN IMPRESA DE ' . $tipoDocumentoF . ' ' . $serie . '-' . $this->getOrderNumeroSerie($numero) . ' - 25</td>
-                            </tr>
-                            </table>
-                            ';
+$footerHTML = '
+<table cellspacing="0.05cm" border="0">
+    ' . $infoBancosHTML . '
+    <tr>
+        <td style="width:16cm;">
+            <strong>CUENTAS BANCARIAS</strong>
+            <strong>TITULAR: </strong> DISTRIBUIDORA DE TUBOS Y CONEXIONES SHALOM E.I.R.L.<br>
+            <strong>BANCO:</strong> BCP <strong>TIPO:</strong> CORRIENTE<br>
+            <strong>NRO:</strong> 194-2628491-0-13<br>
+            <strong>YAPE:</strong> 950 169 056<br>
+            <strong>TITULAR:</strong> PABLO CASANOVA PEÑA
+        </td>
+    </tr>
+    <tr>
+        <td style="width:16cm;">
+            REPRESENTACIÓN IMPRESA DE ' . $tipoDocumentoF . ' ' . $serie . '-' . $this->getOrderNumeroSerie($numero) . ' - 25
+        </td>
+    </tr>
+</table>
+';
+
     // CODIGO QR INTERNO GENERADO POR EL SISTEMA
 
     $style = array(
@@ -3539,7 +3565,7 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
     
 
     $posY = $this->pdf->GetY();
-    $this->pdf->RoundedRect(8, $posY, 192, 4, 1.50, '1111', '');
+    $this->pdf->RoundedRect(8, $posY , 192, 32, 1.50, '1111', '');
 
     if ($nombre_proyecto != '') {
       if ($direccionProyecto != '') {
@@ -3559,11 +3585,26 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
 
 
 
-    $totalLetrasHTML = '<table cellspacing="1px" border="0">
-        <tr>
-        <td style="width:18.4cm; text-align:justification;" ><b>SON:</b> ' . strtoupper(num2letras(round($total, 2))) . ' '.$moneda_nombre.'</td>
-        </tr>
-        </table>';
+  $totalLetrasHTML = '
+<table cellspacing="0" border="0" style="margin-top: 15px; margin-bottom: 10px; width: 100%;">
+    <tr>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
+            <strong style="display: block; margin-bottom: 5px;">CUENTAS BANCARIAS</strong>
+            <div style="line-height: 1.6;">
+                <strong>TITULAR: </strong> DISTRIBUIDORA DE TUBOS Y CONEXIONES SHALOM E.I.R.L.<br>
+                <strong>BANCO:</strong> BCP <strong>TIPO:</strong> CORRIENTE<br>
+                <strong>NRO:</strong> 194-2628491-0-13<br>
+                <strong>YAPE:</strong> 950 169 056<br>
+                <strong>TITULAR:</strong> PABLO CASANOVA PEÑA
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 10px 0;">
+            <b>SON:</b> ' . strtoupper(num2letras(round($total, 2))) . ' '.$moneda_nombre.'
+        </td>
+    </tr>
+</table>';
     $this->pdf->writeHTML($totalLetrasHTML, true, false, true, false);
 
     $infoBancosHTML = "";
@@ -3693,6 +3734,7 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
 
         $footerHTML = ($tipo_docu!="N") ? '<table cellspacing="0.05cm" border="0">
                     
+      
                     <tr>
                     <td style="width:16cm;">Representación impresa de '.$tipoDocumentoG.', para ver el documento visita https://osafact.pse.pe/'.$empresaRUC.' Emitido mediante un PROVEEDOR Autorizado por la SUNAT mediante Resolución de Intendencia No.034-005-0005315</td>
                     </tr>
@@ -3701,11 +3743,14 @@ $this->pdf->writeHTML($bancos_logos, true, false, true, '');
       }else{
         $footerHTML = ($tipo_docu!="N") ?'<table cellspacing="0.05cm" border="0">
                     
-                    <tr>
+         
+        <tr>
                     <td style="width:16cm;">Representación impresa de '.$tipoDocumentoG.' '.$serie.' '.$numero.'</td>
                     </tr>
                     </table>
                     ':"";
+
+                  
       }
       // CODIGO QR INTERNO GENERADO POR EL SISTEMA
       $style = array(

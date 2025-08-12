@@ -6110,7 +6110,7 @@ class Ventas extends Controller {
         die(json_encode($json));
     }
 
-    public function productos_vendidos_detalle()
+     public function productos_vendidos_detalle()
     {
         $posDT = -1;
         $columnas = array(
@@ -6140,7 +6140,6 @@ class Ventas extends Controller {
         $filter->cliente    = $this->input->post('cliente');
         $filter->moneda     = $this->input->post('moneda');
         $filter->tipo_oper  = $this->input->post('tipo_oper');
-
         $reporte_result = $this->ventas_model->productos_vendidos_detalle($filter, false);
         $records = array();
         $cantidad_total = 0;
@@ -6156,6 +6155,28 @@ class Ventas extends Controller {
                 $moneda         = $valor->moneda_simbolo;
                 $unidad         = $valor->unidad;
                 $codigo         = $valor->prod_cod;
+                $codigoprod     = $valor->PROD_Codigo;
+                
+                 $cbovendedor = $this->ventas_model->obtenerVendedorPorComprobante($serie, $numero);
+              
+                 $marca = $this->producto_model->obtener_marca_modelo_por_producto($codigoprod);
+              
+              
+                           // Luego obtener los datos del vendedor
+     $vendedorData = $this->directivo_model->listarVendedores($cbovendedor);
+ if (!empty($vendedorData)) {
+        $vendedor = $vendedorData[0];
+        $nombreCompleto = $vendedor->PERSC_Nombre . " " . $vendedor->PERSC_ApellidoPaterno . " " . $vendedor->PERSC_ApellidoMaterno;
+    } else {
+        $nombreCompleto = "Desconocido";
+    }
+
+               
+                    if (!empty($marca) && isset($marca[0]->MARCC_Descripcion)) {
+                        $descripcionMarca = $marca[0]->MARCC_Descripcion;
+                    } else {
+                        $descripcionMarca = null; // o un valor por defecto
+                    }
                 $descripcion    = $valor->CPDEC_Descripcion;
                 $cantidad       = $valor->CPDEC_Cantidad;
                 $valoru         = $valor->CPDEC_Pu;
@@ -6171,11 +6192,14 @@ class Ventas extends Controller {
                     ++$posDT => $serie."-".$numero,
                     ++$posDT => $documento." - ".$denominacion,
                     ++$posDT => $codigo."-".$descripcion,
+                    ++$posDT => $descripcionMarca,
                     ++$posDT => $unidad,
                     ++$posDT => $cantidad,
-                    ++$posDT => $moneda." ".$total
-                    
-                );
+                    ++$posDT => $moneda." ".$total,
+                    ++$posDT => $nombreCompleto 
+
+
+                ); 
                 $cantidad_total += $cantidad;
                 $total_global   += $valor->CPDEC_Total;
                 $simbolo        = $valor->moneda_simbolo;
@@ -6874,14 +6898,16 @@ class Ventas extends Controller {
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("F$lugar",  "Unidad");
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("G$lugar",  "Codigo");
         $this->excel->setActiveSheetIndex($hoja)->setCellValue("H$lugar",  "Descripción");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("I$lugar",  "Cantidad");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("J$lugar",  "PU");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("K$lugar",  "Precio");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("L$lugar",  "Subtotal");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("M$lugar",  "IGV");
-        $this->excel->setActiveSheetIndex($hoja)->setCellValue("N$lugar",  "Total");
-        
-        $this->excel->getActiveSheet()->getStyle("A$lugar:N$lugar")->applyFromArray($estiloColumnasTitulo);
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("I$lugar",  "Marca");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("J$lugar",  "Vendedor");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("K$lugar",  "Cantidad");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("L$lugar",  "PU");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("M$lugar",  "Precio");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("N$lugar",  "Subtotal");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("O$lugar",  "IGV");
+        $this->excel->setActiveSheetIndex($hoja)->setCellValue("P$lugar",  "Total");
+
+        $this->excel->getActiveSheet()->getStyle("A$lugar:P$lugar")->applyFromArray($estiloColumnasTitulo);
         $this->excel->getActiveSheet()->getColumnDimension("A")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("B")->setWidth("70");
         $this->excel->getActiveSheet()->getColumnDimension("C")->setWidth("20");
@@ -6891,11 +6917,13 @@ class Ventas extends Controller {
         $this->excel->getActiveSheet()->getColumnDimension("G")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("H")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("I")->setWidth("20");
-        $this->excel->getActiveSheet()->getColumnDimension("J")->setWidth("20");
+        $this->excel->getActiveSheet()->getColumnDimension("J")->setWidth("30");
         $this->excel->getActiveSheet()->getColumnDimension("K")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("L")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("M")->setWidth("20");
         $this->excel->getActiveSheet()->getColumnDimension("N")->setWidth("20");
+        $this->excel->getActiveSheet()->getColumnDimension("O")->setWidth("20");
+        $this->excel->getActiveSheet()->getColumnDimension("P")->setWidth("20");
 
         $reporte_result = $this->ventas_model->productos_vendidos_detalle($filter, false);
         $records = array();
@@ -6922,6 +6950,23 @@ class Ventas extends Controller {
                 $igv            = $valor->CPDEC_Igv;
                 $total          = $valor->CPDEC_Total;
                 $moned_cod      = $valor->MONED_Codigo;
+                 $codigoprod     = $valor->PROD_Codigo;
+
+                $cbovendedor = $this->ventas_model->obtenerVendedorPorComprobante($serie, $numero);
+                $marca = $this->producto_model->obtener_marca_modelo_por_producto($codigoprod);
+                     $vendedorData = $this->directivo_model->listarVendedores($cbovendedor);
+if (!empty($vendedorData)) {
+        $vendedor = $vendedorData[0];
+        $nombreCompleto = $vendedor->PERSC_Nombre . " " . $vendedor->PERSC_ApellidoPaterno . " " . $vendedor->PERSC_ApellidoMaterno;
+    } else {
+        $nombreCompleto = "Desconocido";
+    }
+   if (!empty($marca) && isset($marca[0]->MARCC_Descripcion)) {
+                        $descripcionMarca = $marca[0]->MARCC_Descripcion;
+                    } else {
+                        $descripcionMarca = null; // o un valor por defecto
+                    }
+
                
                 $lugar++;
                 $this->excel->setActiveSheetIndex($hoja)->setCellValue("A$lugar",  $fecha);
@@ -6932,12 +6977,14 @@ class Ventas extends Controller {
                 $this->excel->setActiveSheetIndex($hoja)->setCellValue("F$lugar",  $unidad);
                 $this->excel->setActiveSheetIndex($hoja)->setCellValue("G$lugar",  $codigo);
                 $this->excel->setActiveSheetIndex($hoja)->setCellValue("H$lugar",  $descripcion);
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("I$lugar",  $cantidad);
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("J$lugar",  number_format($valoru,2));
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("K$lugar",  number_format($preciou,2));
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("L$lugar",  number_format($subtotal,2));
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("M$lugar",  number_format($igv,2));
-                $this->excel->setActiveSheetIndex($hoja)->setCellValue("N$lugar",  number_format($total,2));
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("I$lugar",  $descripcionMarca);
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("J$lugar",  $nombreCompleto);
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("K$lugar",  $cantidad);
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("L$lugar",  number_format($valoru,2));
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("M$lugar",  number_format($preciou,2));
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("N$lugar",  number_format($subtotal,2));
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("O$lugar",  number_format($igv,2));
+                $this->excel->setActiveSheetIndex($hoja)->setCellValue("P$lugar",  number_format($total,2));
                 
                 $cantidad_total += $cantidad;
                 $total_global   += $valor->CPDEC_Total;

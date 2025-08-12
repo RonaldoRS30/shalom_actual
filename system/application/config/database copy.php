@@ -28,14 +28,14 @@ $active_record = TRUE;
 $db['default']['hostname'] = "localhost";
 
 //house
-// $db['default']['username'] = "root";
-// $db['default']['password'] = "";
-// $db['default']['database'] = "nuevo_shalom";
-
-
-$db['default']['username'] = "osafactc2_shalom";
-$db['default']['password'] = "osafactc2_shalom";
+$db['default']['username'] = "root";
+$db['default']['password'] = "";
 $db['default']['database'] = "osafactc2_shalom";
+
+
+// $db['default']['username'] = "osafactc2_shalom";
+// $db['default']['password'] = "osafactc2_shalom";
+// $db['default']['database'] = "osafactc2_shalom";
 
 $db['default']['dbdriver'] = "mysqli";
 $db['default']['dbprefix'] = "";
