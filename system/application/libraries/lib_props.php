@@ -3304,8 +3304,8 @@ $footerHTML = '
     $exonerado  -= ($exonerado * $descuento100 / 100);
     $inafecto   -= ($inafecto * $descuento100 / 100);
 
-    $this->pdf->RoundedRect(8, 53, 130, 26, 1.50, '1111', ''); // CLIENTE
-    $this->pdf->RoundedRect(139, 53, 60, 26, 1.50, '1111', ''); // FECHA
+    $this->pdf->RoundedRect(8, 53, 130, 29, 1.50, '1111', ''); // CLIENTE
+    $this->pdf->RoundedRect(139, 53, 60, 29, 1.50, '1111', ''); // FECHA
 
     $clienteHTML = '<table style="text-indent:0cm;" cellpadding="0.02cm" border="0">
         <tr>
