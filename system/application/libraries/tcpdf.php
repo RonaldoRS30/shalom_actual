@@ -89,9 +89,9 @@ class pdfGeneral extends TCPDF {
         $this->SetY(34);
         
         $comprobanteHTML = '<table style="width:12cm; font-size:8pt;" border="0">
-        <tr>
-        <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
-        </tr>
+          <tr>
+    <td style="font-weight:bold; font-size:larger; color:#003B65;">'.$this->RazonSocial.'</td>
+</tr>
         <tr>
         <td>' . $this->direccion . '<br>' . $this->ubigeo. '<br>---
         </td>
@@ -183,9 +183,9 @@ class pdfCotizacion extends TCPDF {
         }
 
         $comprobanteHTML = '<table style="width:13cm; font-size:8pt;" border="0">
-        <tr>
-        <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
-        </tr>
+          <tr>
+    <td style="font-weight:bold; font-size:larger; color:#003B65;">'.$this->RazonSocial.'</td>
+</tr>
         <tr>
         
         <td>' . $datos_contacto . '
@@ -318,9 +318,9 @@ class pdfComprobante extends TCPDF {
 
 
         $comprobanteHTML = '<table style="width:13cm; font-size:8pt;" border="0">
-        <tr>
-        <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
-        </tr>
+       <tr>
+    <td style="font-weight:bold; font-size:larger; color:#003B65;">'.$this->RazonSocial.'</td>
+</tr>
         <tr>
         
         <td>' . $datos_contacto . '
@@ -601,9 +601,9 @@ class pdfGuiaRemision extends TCPDF {
         $this->SetY(34);
 
         $comprobanteHTML = '<table style="width:12cm; font-size:8pt;" border="0">
-        <tr>
-        <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
-        </tr>
+         <tr>
+    <td style="font-weight:bold; font-size:larger; color:#003B65;">'.$this->RazonSocial.'</td>
+</tr>
         <tr>
         <td>' . $this->direccion .'<br>
         </td>
@@ -689,9 +689,9 @@ class pdfPedidos extends TCPDF {
         $this->SetY(34);
 
         $comprobanteHTML = '<table style="width:12cm; font-size:8pt;" border="0">
-        <tr>
-        <td style="font-weight:bold;">'.$this->RazonSocial.'</td>
-        </tr>
+           <tr>
+    <td style="font-weight:bold; font-size:larger; color:#003B65;">'.$this->RazonSocial.'</td>
+</tr>
         <tr>
         <td>' . $this->direccion . '<br>
         </td>
