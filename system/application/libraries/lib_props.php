@@ -643,7 +643,7 @@ class Lib_props
   {
     #$persona = ($persona == NULL) ? $_SESSION['persona'] : $persona; # CAMBIO PARA SHARKS - SOLAMENTE MUESTRA AL VENDEDOR LOGUEADO
 
-    $data = $this->ci->directivo_model->listarVendedores($persona);
+    $data = $this->ci->directivo_model->listarVendedores();
     $option = "<option value=''>SELECCIONAR</option>";
 
     foreach ($data as $indice => $fila) {
@@ -3089,8 +3089,8 @@ $footerHTML = '
 
 
     // DATOS DEL USUARIO
-    $vendedor = (strlen($datos_comprobante[0]->vendedor) > 20) ? substr($datos_comprobante[0]->vendedor, 0, 20) : $datos_comprobante[0]->vendedor;
-    
+    $vendedor       = $datos_comprobante[0]->vendedor;
+    // $vendedor = (strlen($datos_comprobante[0]->vendedor) > 20) ? substr($datos_comprobante[0]->vendedor, 0, 20) : $datos_comprobante[0]->vendedor;    
     // DATOS DEL PROYECTO
     $nombre_proyecto = "";
     $direccion_proyecto = "";
@@ -3306,6 +3306,19 @@ $footerHTML = '
 
     $this->pdf->RoundedRect(8, 53, 130, 29, 1.50, '1111', ''); // CLIENTE
     $this->pdf->RoundedRect(139, 53, 60, 29, 1.50, '1111', ''); // FECHA
+
+// Validar variables y darles un valor por defecto si están vacías
+$tp               = !empty($tp) ? $tp : "N/A";
+$fecha            = !empty($fecha) ? $fecha : "N/A";
+$nombre_cliente   = !empty($nombre_cliente) ? $nombre_cliente : "N/A";
+$fecha_vencimiento= !empty($fecha_vencimiento) ? $fecha_vencimiento : "N/A";
+$tipoID           = !empty($tipoID) ? $tipoID : "N/A";
+$ruc              = !empty($ruc) ? $ruc : "N/A";
+$vendedor         = !empty($vendedor) ? $vendedor : "N/A";
+$direccion        = !empty($direccion) ? $direccion : "N/A";
+$guiaRemision     = !empty($guiaRemision) ? $guiaRemision : "N/A";
+$moneda_nombre    = !empty($moneda_nombre) ? $moneda_nombre : "N/A";
+
 
     $clienteHTML = '<table style="text-indent:0cm;" cellpadding="0.02cm" border="0">
         <tr>

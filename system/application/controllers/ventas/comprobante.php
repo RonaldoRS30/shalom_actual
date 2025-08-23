@@ -4440,6 +4440,8 @@ class Comprobante extends Controller{
 
         $data['cboMoneda']      = $this->OPTION_generador($this->moneda_model->listar(), 'MONED_Codigo', 'MONED_Descripcion', $moneda);
         $data['cboVendedor']    = $this->lib_props->listarVendedores($vendedor);
+        $data['vendedorSeleccionado'] = $vendedor;
+
         $data['cajas']          = $this->caja_model->getCajas();
         $data['caja']           = "$caja";
         $data['serie']          = $serie;
